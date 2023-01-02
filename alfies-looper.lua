@@ -13,7 +13,7 @@ function init()
     supercut.pre_level(i,1)         -- initialise pre level to 1 so that full overdub possible
     supercut.rate_slew_time(i, 0)   -- just 0
     supercut.phase_quant(i, 0.01)   -- 10 ms
-    supercut.level_slew_time(i, 0)  -- just 0
+    --supercut.level_slew_time(i, 0)  -- just 0
     supercut.fade_time(i, 0.01)     -- 10 ms
     supercut.rec(i,1)
     supercut.play(i,1)
@@ -131,7 +131,7 @@ function key(n,z)
           supercut.recpre_slew_time(ch_selector, fadetime)  -- rec fadeout time
           supercut.rec_level(ch_selector, 0)                -- turn rec level back down
           --supercut.rec(ch_selector,0)                 -- stop recording // should not be done
-          supercut.fade_time(ch_selector, fadetime)
+          --supercut.fade_time(ch_selector, fadetime)
           stoppedoverdubbing[ch_selector]=1;          -- set stop overdubbing flag to true to know we are done with overdubbing (1 also means we are NOT overdubbing, reason why it is initiated to 1 by default)
           redraw()                                    -- draw changes on screen
         end
@@ -166,17 +166,19 @@ function countfunc()
   counter=counter+1                                   -- increase global counter
   --print("counting" .. counter)
   if counter == 2 then                                -- if we reached 2 seconds clear loop
-    supercut.fade_time(ch_selector, fadetime)
+    --supercut.fade_time(ch_selector, fadetime)
     --supercut.rec(ch_selector,0)                       -- stop recording // should not be done
     --supercut.play(ch_selector,0)                      -- stop playing // should not be done
     -- important line, this is the only way to clear a voice and not the whole buffer, this one is for stereo clearing, for mono clearing use softcut.buffer_clear_region_channel, note this is softcut. not supercut. second to last parameter should be a fade (to avoid clicking?) but it does not seem to make a difference on clicking when clearing a loop that is still playing sounds
-    softcut.buffer_clear_region(supercut.region_start(ch_selector),supercut.region_length(ch_selector),0.01,0)
+    softcut.buffer_clear_region(supercut.region_start(ch_selector),supercut.region_length(ch_selector),0,0)
     supercut.fade_time(ch_selector, fadetime)
-    recflag[ch_selector]=0;                           -- set recflag to 0 to know button can be pressed for the first time again after this
+    recflag[ch_selector]=0                            -- set recflag to 0 to know button can be pressed for the first time again after this
+    overdubbing[ch_selector]=0                        -- set overdub flag to 0 to know we are not overdubbing
+    stoppedoverdubbing[ch_selector]=1                 -- set stopoverdub flag to 1 to know we are not overdubbing
+    --pitchrate[ch_selector]=1    glitches
+    --level[ch_selector]=1        glitches
     recording[ch_selector]=0                          -- set rec screen flag to zero to show on screen we not dubbing
     playing[ch_selector]=0                            -- set play screen flag to zero to show on screen we not playing
-    overdubbing[ch_selector]=0;                       -- set overdub flag to 0 to know we are not overdubbing
-    stoppedoverdubbing[ch_selector]=1;                -- set stopoverdub flag to 1 to know we are not overdubbing
     --print("buffer cleared")
     metro.free_all()                                  -- free all metro counter so that they can be reallocated (there are only 30)
     counter=0;                                        -- reset clearcounter 
