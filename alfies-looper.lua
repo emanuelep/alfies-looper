@@ -51,7 +51,8 @@ function redraw()
   screen.move(68,64)
   screen.text("PITCH")
   screen.move(73,58)
-  screen.text(math.floor(pitchrate[ch_selector]*100)/100)
+  --screen.text(math.floor(pitchrate[ch_selector]*100)/100)
+  screen.text(pitchrate[ch_selector])
   screen.move(103,64)
   screen.text("LEVEL")
   screen.move(108,58)
@@ -190,6 +191,8 @@ end
 function enc(n,d)
   if n == 2 then
       pitchrate[ch_selector] = util.clamp(pitchrate[ch_selector] + d/100,0.01,10) -- produce steps between 0.01 and 10 from encoder increases/decreases
+      --print("pitch rate:" .. pitchrate[ch_selector])
+      --print("d/100:" .. d/100)
       supercut.rate(ch_selector,pitchrate[ch_selector])                           -- set pitch rate of current supervoice
       redraw()                                                                    -- draw changes on screen
   end
