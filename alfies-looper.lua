@@ -63,10 +63,16 @@ function redraw()
   screen.move(73,58)
   --screen.text(math.floor(pitchrate[ch_selector]*100)/100)
   screen.text(math.floor(pitchrate[ch_selector]*100)/100)
-  screen.move(103,64)
-  screen.text("LEVEL")
-  screen.move(108,58)
-  screen.text(math.floor(level[ch_selector]*100)/100)
+  if altflag == 0 then
+    screen.move(103,64)
+    screen.text("LEVEL")
+    screen.move(108,58)
+    screen.text(math.floor(level[ch_selector]*100)/100)
+  elseif altflag == 1 then
+    screen.move(100,64)
+    screen.text("BW FW")
+  end
+  
   
   -- hold to clear
   screen.move(65,10)
@@ -213,14 +219,14 @@ end
 function enc(n,d)
   if n == 2 then
     if altflag == 0 then
-      pitchrate[ch_selector] = util.clamp(pitchrate[ch_selector] + d/100,0.01,10) -- produce steps between 0.01 and 10 from encoder increases/decreases
+      pitchrate[ch_selector] = util.clamp(pitchrate[ch_selector] + d/100,-10,10) -- produce steps between 0.01 and 10 from encoder increases/decreases
       redraw()
     elseif altflag == 1 then
       if d == 1 then
-        pitchrate[ch_selector] = util.clamp(pitchrate[ch_selector] * 1.059463094359295,0.01,10) -- produce semitone steps between 0.01 and 10 from encoder increases/decreases
+        pitchrate[ch_selector] = util.clamp(pitchrate[ch_selector] * 1.059463094359295,-10,10) -- produce semitone steps between 0.01 and 10 from encoder increases/decreases
         redraw()
       elseif d == -1 then
-        pitchrate[ch_selector] = util.clamp(pitchrate[ch_selector] / 1.059463094359295,0.01,10) -- produce semitone steps between 0.01 and 10 from encoder increases/decreases
+        pitchrate[ch_selector] = util.clamp(pitchrate[ch_selector] / 1.059463094359295,-10,10) -- produce semitone steps between 0.01 and 10 from encoder increases/decreases
         redraw()
       end
       
@@ -232,8 +238,22 @@ function enc(n,d)
   end
 -- encored 3, level  
   if n == 3 then
-      level[ch_selector] = util.clamp(level[ch_selector] + d/100,0,1)             -- produce steps between 0 and 1 from encoder increases/decreases
-      supercut.level(ch_selector,level[ch_selector])                              -- set level of current supervoice
-      redraw()                                                                    -- draw changes on screen
+      if altflag == 0 then
+        level[ch_selector] = util.clamp(level[ch_selector] + d/100,0,1)             -- produce steps between 0 and 1 from encoder increases/decreases
+        supercut.level(ch_selector,level[ch_selector])                              -- set level of current supervoice
+        redraw()                                                                    -- draw changes on screen
+      elseif altflag == 1 then                                                      -- sets voice in reverse if alt button is pressed
+        if d == 1 then
+          if pitchrate[ch_selector] < 0 then
+            pitchrate[ch_selector]=pitchrate[ch_selector]*-1;
+          end
+        elseif d == -1 then
+          if pitchrate[ch_selector] > 0 then
+            pitchrate[ch_selector]=pitchrate[ch_selector]*-1;
+          end
+        end
+        supercut.rate(ch_selector,pitchrate[ch_selector])                           -- set pitch rate of current supervoice
+        redraw()                                                                    -- draw changes on screen
+      end
   end
 end
