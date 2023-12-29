@@ -6,20 +6,22 @@
 -- @emanuelep
 
 include "supercut/lib/supercut"
-
+--buffer_clear_channel (channel)
 function init()
-  fadetime=0.06                     -- fade time for each action
+  --fadetime=4;--0.06                     -- fade time for each action
   for i=1,3,1 do
     supercut.init(i,"stereo")       -- initialise supervoices
     supercut.pre_level(i,1)         -- initialise pre level to 1 so that full overdub possible
-    supercut.rate_slew_time(i, 0)   -- just 0
-    supercut.phase_quant(i, 0.01)   -- 10 ms
+    --supercut.rate_slew_time(i, 0)   -- just 0 for pitch
+    --supercut.phase_quant(i, 0.01)   -- 10 ms for time polling
     --supercut.level_slew_time(i, 0)  -- just 0
-    softcut.fade_time(i, 0.06)     -- 10 ms
+    --supercut.fade_time(i, 3)     -- 10 ms
     --supercut.rec(i,1)
-    supercut.play(i,1)
-    supercut.rec_level(i,0)
-    supercut.recpre_slew_time(i, fadetime)
+    --supercut.play(i,1)
+    --supercut.rec_level(i,0)
+    --supercut.level_input_cut(1,i,0)
+    --supercut.level_input_cut(2,i,0)
+    --supercut.level_slew_time(i, fadetime)
   end
   altflag=0;                        -- initialise alt key flag
   recflag= {0,0,0}                  -- initialise recflag array
@@ -27,7 +29,7 @@ function init()
   stoppedoverdubbing= {1,1,1}       -- initialise stop overdub flag array
   pitchrate= {1,1,1}                -- initialise pitch rate array
   level= {1,1,1}                    -- initialise level array
-  supercut.poll_start_phase()       -- initialise polling phase
+  --supercut.poll_start_phase()       -- initialise polling phase
   ch_selector=1;                    -- initialise channel selector to first channel
   counter=0;                        -- initialise "hold to clear" counter (in seconds)
   recording={0,0,0}                 -- initialise recording flag (for screen gui)
@@ -52,7 +54,7 @@ function redraw()
   if altflag == 0 then
     screen.text("DUB     ALT")
   elseif altflag == 1 then
-    screen.text("VOICE#    ")
+    screen.text("CLEAR    ")
   end
   screen.move(68,64)
   if altflag == 0 then
@@ -75,8 +77,8 @@ function redraw()
   
   
   -- hold to clear
-  screen.move(65,10)
-  screen.text("HOLD TO CLEAR")
+  screen.move(95,10)
+  screen.text("VOICE#")
   
   -- dub / play / void message
   screen.move(60,35)
@@ -105,24 +107,39 @@ function key(n,z)
               recflag[ch_selector]=1                    -- set recflag to 1 to know button been pressed once
               recording[ch_selector]=1                  -- set rec screen flag to one to show on screen that we dubbing
               playing[ch_selector]=0                    -- set play screen flag to zero since we are not playing but dubbing
-              t1=util.time()                            -- save record start time
-              supercut.loop_start(ch_selector,0)        -- looping starting position to zero
-              supercut.loop_position(ch_selector,0)     -- set loop position to zero
-              supercut.rec(ch_selector,1)               -- start recording // should not be done
+              
+              supercut.rec(ch_selector,1)
+              
+              --t1=util.time()                            -- save record start time
+              --supercut.loop_start(ch_selector,0)        -- looping starting position to zero
+              --supercut.loop_position(ch_selector,0)     -- set loop position to zero
+              --supercut.rec(ch_selector,1)               -- start recording // should not be done
               --supercut.recpre_slew_time(ch_selector, fadetime)  -- rec fade in time
-              supercut.rec_level(ch_selector, 1)                -- turn rec level up
+              --supercut.rec_level(ch_selector, 1)                -- turn rec level up
+              --supercut.level_input_cut(1,ch_selector,1)
+              --supercut.level_input_cut(2,ch_selector,1)
+              --supercut.rec(ch_selector,1)
               --supercut.fade_time(ch_selector, fadetime) -- fade rec in // kinda not working
-              supercut.loop_length(ch_selector,116)     -- to max time temporarily
+              --supercut.loop_length(ch_selector,116)     -- to max time temporarily
               redraw()                                  -- draw changes on screen
             elseif recflag[ch_selector] == 1 then       -- we have been recording (button has been pressed once) so now go into stop-recording mode
               -- print("stopped recording")
               recflag[ch_selector]=0                    -- set recflag to 0 to know button been pressed twice and goes back to initial state 
               recording[ch_selector]=0                  -- set rec screen flag to zero to show on screen we not dubbing
               playing[ch_selector]=1                    -- set play screen flag to one to show on screen we are playing loop and not dubbing
-              t2=util.time()                            -- save recording stop time
-              thetime=t2-t1;                            -- calculate loop length in s
-              supercut.rec_level(ch_selector, 0)                -- turn rec level down
-              supercut.loop_length(ch_selector,thetime) -- set loop length to calculated length
+              
+              supercut.rec(ch_selector,0)
+              supercut.loop_length(ch_selector,supercut.loop_position(ch_selector))
+              supercut.play(ch_selector,1)
+              
+              --t2=util.time()                            -- save recording stop time
+              --thetime=t2-t1;                            -- calculate loop length in s
+              --supercut.rec_level(ch_selector, 0)                -- turn rec level down
+              --supercut.level_input_cut(1,ch_selector,0)
+              --supercut.level_input_cut(2,ch_selector,0)
+              --supercut.rec(ch_selector,0)
+              --supercut.loop_end(ch_selector,supercut.loop_position(ch_selector))
+              --supercut.loop_length(ch_selector,thetime) -- set loop length to calculated length
               --supercut.recpre_slew_time(ch_selector, fadetime)  -- rec fade out time
               --supercut.fade_time(ch_selector, fadetime) -- fade rec out, not working since fadeout is post roll https://llllllll.co/t/norns-2-0-softcut/20550/113
               --supercut.play(ch_selector,1)              -- play loop
@@ -134,10 +151,16 @@ function key(n,z)
             -- print("overdubbing")
             recording[ch_selector]=1                    -- set rec screen flag to one to show on screen that we dubbing 
             playing[ch_selector]=0                      -- set play screen flag to zero since we are not playing but dubbing
+            
+              supercut.rec(ch_selector,1)
+            
             -- important line for overdubbing, somehow supercut structure needs for loop_position to be told that we want to do stuff in loop_position(channelID) taken from its current position, works only this way
-            supercut.loop_position(ch_selector,supercut.loop_position(ch_selector))
+            --supercut.loop_position(ch_selector,supercut.loop_position(ch_selector))
             --supercut.recpre_slew_time(ch_selector, fadetime)  -- rec fade in time
-            supercut.rec_level(ch_selector, 1)                -- turn rec level back up
+            --supercut.rec_level(ch_selector, 1)                -- turn rec level back up
+            --supercut.level_input_cut(1,ch_selector,1)
+            --supercut.level_input_cut(2,ch_selector,1)
+            --supercut.rec(ch_selector,1)
             --supercut.rec(ch_selector,1)                 -- start recording // should not be done
             --supercut.fade_time(ch_selector, 0.01)
             stoppedoverdubbing[ch_selector]=0;          -- set this to zero since we ARE overdubbing (to be later set to 1 when we stop overdubbing, also initiated to 1 by default since it is needed to enter overdubbing mode)
@@ -146,8 +169,14 @@ function key(n,z)
             --print("stopped overdubbing")
             recording[ch_selector]=0                    -- set rec screen flag to zero to show on screen we not dubbing
             playing[ch_selector]=1                      -- set play screen flag to one to show on screen we are playing loop and not dubbing
+            
+              supercut.rec(ch_selector,0)
+              
             --supercut.recpre_slew_time(ch_selector, fadetime)  -- rec fadeout time
-            supercut.rec_level(ch_selector, 0)                -- turn rec level back down
+            --supercut.rec_level(ch_selector, 0)                -- turn rec level back down
+            --supercut.level_input_cut(1,ch_selector,0)
+            --supercut.level_input_cut(2,ch_selector,0)
+            --supercut.rec(ch_selector,0)
             --supercut.rec(ch_selector,0)                 -- stop recording // should not be done
             --supercut.fade_time(ch_selector, fadetime)
             stoppedoverdubbing[ch_selector]=1;          -- set stop overdubbing flag to true to know we are done with overdubbing (1 also means we are NOT overdubbing, reason why it is initiated to 1 by default)
@@ -155,15 +184,21 @@ function key(n,z)
           end
         end
       elseif altflag == 1 then                        -- change voice selector
-        if z == 1 then
-          if ch_selector < 3 then                       -- increase voice index unless we are at voice 3
-            ch_selector=ch_selector+1;
-          elseif ch_selector == 3 then                  -- if we are at voice 3 start back to voice 1
-            ch_selector=1;
-          end
-          --print("currently selected channel:" .. ch_selector)
-          redraw()                                      -- draw changes on screen
-        end
+        supercut.rec(ch_selector,0)
+        softcut.buffer_clear_region(supercut.home_region_start(ch_selector),supercut.home_region_length(ch_selector),0,0)
+        supercut.play(ch_selector,0)
+        supercut.loop_position(ch_selector,0)
+        supercut.loop_length(ch_selector,116)
+        recflag[ch_selector]=0                            -- set recflag to 0 to know button can be pressed for the first time again after this
+        overdubbing[ch_selector]=0                        -- set overdub flag to 0 to know we are not overdubbing
+        stoppedoverdubbing[ch_selector]=1                 -- set stopoverdub flag to 1 to know we are not overdubbing
+        recording[ch_selector]=0                          -- set rec screen flag to zero to show on screen we not dubbing
+        playing[ch_selector]=0                            -- set play screen flag to zero to show on screen we not playing
+        --supercut.init(ch_selector,"stereo")             -- initialise supervoice after clearing
+        --supercut.pre_level(ch_selector,1)         -- initialise pre level to 1 so that full overdub possible
+        --supercut.rec(ch_selector,0)
+        --supercut.play(ch_selector,0)
+        redraw()                                          -- draw changes on screen
       end
     end
     
@@ -181,42 +216,60 @@ function key(n,z)
     end
     
     -- key 1, clear loop voices
-    if n == 1 then
-      if z == 1 then
-        countdown=metro.init(countfunc,1,2)           -- initiate metro function with step 1 second, counting up to 2 seconds
-        countdown:start()                             -- start metro function
-      end
-    end
+    --if n == 1 then
+    --  if altflag == 1 then
+    --    supercut.rec(ch_selector,0)
+    --    softcut.buffer_clear_region(supercut.region_start(ch_selector),supercut.region_length(ch_selector),0.06,0)
+    --    recflag[ch_selector]=0                            -- set recflag to 0 to know button can be pressed for the first time again after this
+    --    overdubbing[ch_selector]=0                        -- set overdub flag to 0 to know we are not overdubbing
+    --    stoppedoverdubbing[ch_selector]=1                 -- set stopoverdub flag to 1 to know we are not overdubbing
+    --    recording[ch_selector]=0                          -- set rec screen flag to zero to show on screen we not dubbing
+    --    playing[ch_selector]=0                            -- set play screen flag to zero to show on screen we not playing
+    --    redraw()                                          -- draw changes on screen
+    --  end
+      --if z == 1 then
+      --  countdown=metro.init(countfunc,1,2)           -- initiate metro function with step 1 second, counting up to 2 seconds
+      --  countdown:start()                             -- start metro function
+      --end
+    --end
     
 end
 
 -- timed function to clear buffer
-function countfunc()
-  counter=counter+1                                   -- increase global counter
-  --print("counting" .. counter)
-  if counter == 2 then                                -- if we reached 2 seconds clear loop
+--function countfunc()
+--  counter=counter+1                                   -- increase global counter
+--  --print("counting" .. counter)
+--  if counter == 2 then                                -- if we reached 2 seconds clear loop
+--    --supercut.fade_time(ch_selector, fadetime)
+--    supercut.rec(ch_selector,0)                       -- stop recording // should not be done
+--    --supercut.play(ch_selector,0)                      -- stop playing // should not be done
+--    -- important line, this is the only way to clear a voice and not the whole buffer, this one is for stereo clearing, for mono clearing use softcut.buffer_clear_region_channel, note this is softcut. not supercut. second to last parameter should be a fade (to avoid clicking?) but it does not seem to make a difference on clicking when clearing a loop that is still playing sounds
+--    softcut.buffer_clear_region(supercut.region_start(ch_selector),supercut.region_length(ch_selector),0.06,0)
     --supercut.fade_time(ch_selector, fadetime)
-    supercut.rec(ch_selector,0)                       -- stop recording // should not be done
-    --supercut.play(ch_selector,0)                      -- stop playing // should not be done
-    -- important line, this is the only way to clear a voice and not the whole buffer, this one is for stereo clearing, for mono clearing use softcut.buffer_clear_region_channel, note this is softcut. not supercut. second to last parameter should be a fade (to avoid clicking?) but it does not seem to make a difference on clicking when clearing a loop that is still playing sounds
-    softcut.buffer_clear_region(supercut.region_start(ch_selector),supercut.region_length(ch_selector),0,0)
-    supercut.fade_time(ch_selector, fadetime)
-    recflag[ch_selector]=0                            -- set recflag to 0 to know button can be pressed for the first time again after this
-    overdubbing[ch_selector]=0                        -- set overdub flag to 0 to know we are not overdubbing
-    stoppedoverdubbing[ch_selector]=1                 -- set stopoverdub flag to 1 to know we are not overdubbing
+--    recflag[ch_selector]=0                            -- set recflag to 0 to know button can be pressed for the first time again after this
+--    overdubbing[ch_selector]=0                        -- set overdub flag to 0 to know we are not overdubbing
+--    stoppedoverdubbing[ch_selector]=1                 -- set stopoverdub flag to 1 to know we are not overdubbing
     --pitchrate[ch_selector]=1    glitches
     --level[ch_selector]=1        glitches
-    recording[ch_selector]=0                          -- set rec screen flag to zero to show on screen we not dubbing
-    playing[ch_selector]=0                            -- set play screen flag to zero to show on screen we not playing
+--    recording[ch_selector]=0                          -- set rec screen flag to zero to show on screen we not dubbing
+--    playing[ch_selector]=0                            -- set play screen flag to zero to show on screen we not playing
     --print("buffer cleared")
-    metro.free_all()                                  -- free all metro counter so that they can be reallocated (there are only 30)
-    counter=0;                                        -- reset clearcounter 
-    redraw()                                          -- draw changes on screen
-  end
-end
+--    metro.free_all()                                  -- free all metro counter so that they can be reallocated (there are only 30)
+--    counter=0;                                        -- reset clearcounter 
+--    redraw()                                          -- draw changes on screen
+--  end
+--end
 
--- encoder 2, pitch
-function enc(n,d)
+function enc(n,d) --encoders
+  
+  -- encoder 1, voices 
+  if n == 1 then
+    -- change voice selector
+    ch_selector=util.clamp(ch_selector+d,1,3)
+    redraw()
+  end
+  
+  -- encoder 2, pitch
   if n == 2 then
     if altflag == 0 then
       pitchrate[ch_selector] = util.clamp(pitchrate[ch_selector] + d/100,-10,10) -- produce steps between 0.01 and 10 from encoder increases/decreases
@@ -236,7 +289,7 @@ function enc(n,d)
       supercut.rate(ch_selector,pitchrate[ch_selector])                           -- set pitch rate of current supervoice
       redraw()                                                                    -- draw changes on screen
   end
--- encored 3, level  
+-- encoder 3, level  
   if n == 3 then
       if altflag == 0 then
         level[ch_selector] = util.clamp(level[ch_selector] + d/100,0,1)             -- produce steps between 0 and 1 from encoder increases/decreases
